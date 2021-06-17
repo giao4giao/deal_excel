@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt,QTimer,QThread,pyqtSignal
-from PyQt5.QtWidgets import QMessageBox, QWidget, QApplication
+from PyQt5.QtWidgets import QMessageBox, QWidget, QApplication, QDialog
 from new import Ui_Form
 import os,xlrd,xlsxwriter
 from xlrd import xldate_as_tuple
@@ -251,6 +251,12 @@ class ExcelData(QThread):
 
 	# 先行写入一些的内容
 	def write_file(self):
+		style = self.worksheet.add_format({
+		'align': 'center',  # 水平居中
+		'valign': 'vcenter',  # 垂直居中
+		'font': u'宋体',  # 字体
+		})
+		style.set_font_size(15)
 		style3 = self.worksheet.add_format({
 		'border': 1,  # 边框
 		'align': 'center',  # 水平居中
@@ -327,7 +333,7 @@ class ExcelData(QThread):
 				elif a==5:
 					style_ = style7
 				else:
-					style_=style
+					style_= style
 				self.write_table.merge_range(a, c, b-1, d-1 , i.get('data'),style_)
 			self.write_table.set_row(a, self.width)
 
@@ -462,8 +468,8 @@ if __name__ == "__main__":
 		window.show()
 
 	except BaseException as e:
-		QMessageBox.about(self, '错误', e)
+		QMessageBox.about(QDialog(), '错误', e)
 
 	except AttributeError as e:
-		QMessageBox.about(self, '错误', e)
+		QMessageBox.about(QDialog(), '错误', e)
 	sys.exit(app.exec_())
