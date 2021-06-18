@@ -6,8 +6,8 @@ VSVersionInfo(
   ffi=FixedFileInfo(
     # filevers and prodvers should be always a tuple with four items: (1, 2, 3, 4)
     # Set not needed items to zero 0.
-    filevers=(1, 0, 0000, 0000),
-    prodvers=(1, 0, 0000, 0000),
+    filevers=(1, 0, 1000, 0000),
+    prodvers=(1, 0, 2000, 0000),
     # Contains a bitmask that specifies the valid bits 'flags'r
     mask=0x3f,
     # Contains a bitmask that specifies the Boolean attributes of the file.
@@ -31,12 +31,12 @@ VSVersionInfo(
         u'000004b0',
         [StringStruct(u'CompanyName', u'main Software Foundation'),
         StringStruct(u'FileDescription', u'转换器'),
-        StringStruct(u'FileVersion', u'1.0.0'),
+        StringStruct(u'FileVersion', u'1.0.2'),
         StringStruct(u'InternalName', u'转换器 Console'),
         StringStruct(u'LegalCopyright', u'Copyright © 2001-2016 Python Software Foundation. Copyright © 2000 BeOpen.com. Copyright © 1995-2001 CNRI. Copyright © 1991-1995 SMC.'),
         StringStruct(u'OriginalFilename', u'main.exe'),
         StringStruct(u'ProductName', u'main'),
-        StringStruct(u'ProductVersion', u'1.0.0')])
+        StringStruct(u'ProductVersion', u'1.0.2')])
       ]), 
     VarFileInfo([VarStruct(u'Translation', [0, 1200])])
   ]
