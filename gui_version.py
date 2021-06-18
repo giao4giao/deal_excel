@@ -6,7 +6,9 @@ from xlrd import xldate_as_tuple
 from xlrd.biffh import XLRDError
 import datetime
 from xlsxwriter.exceptions import FileCreateError
-
+import jieba
+import re
+from collections import Counter
 
 
 class ExcelData(QThread):
@@ -360,6 +362,37 @@ class ExcelData(QThread):
 		except BaseException as e:
 			self.data_signal.emit({'state':0,'data':str(e)+'\n           选择的文件内部格式错误\n         请重新选择'})
 
+	# 获取到词语
+	def get_pariciple(self,max_num=4):
+		chinese = '[\u4e00-\u9fa5]+'
+		datas=self.readExcel()
+		l=[]
+		for data in datas:
+			l+=[data.get('产品名称'),]
+		ls=[]
+		l =[' '.join(re.findall(chinese,i)) for i in l]
+		for i in l:
+			# ls+=[jieba.lcut(i,cut_all=True),]
+			ls+=[jieba.lcut(i),]
+		# print(ls)
+		l=[]
+		for s in ls:
+			for i in s:
+				if i not in (' ','挂版','沙发') and len(i)>=2:
+					l+=[i,]
+		# l=list(set(l))
+		# print(Counter(l))
+		dic=Counter(l)
+		dic = sorted(dic.items(),key= lambda x:x[1],reverse=True)[:max_num]
+		key=[x[0] for x in dic]
+		# print(key)
+		return '\n'.join(key)
+
+
+
+
+
+
 class new_pane(QWidget, Ui_Form):
 	def __init__(self, parent=None, *args, **kwargs):
 		super().__init__(parent, *args, **kwargs)
@@ -409,6 +442,7 @@ class new_pane(QWidget, Ui_Form):
 		self.Excel.start()
 
 	def change_(self,string):
+		# print('change_')
 		self.Excel=ExcelData(self.comboBox.currentText(),self.sheetname,self.lineEdit.text()+'.xlsx')
 		
 		if not self.Excel.state:
@@ -429,8 +463,10 @@ class new_pane(QWidget, Ui_Form):
 		print(string)
 		if string=='没有读取到文件':
 			self.pushButton.setEnabled(False)
+			self.pushButton_3.setEnabled(False)
 			return
 		self.pushButton.setEnabled(True)
+		self.pushButton_3.setEnabled(True)
 		self.lineEdit.setText('new_'+os.path.splitext(string)[0])
 
 		
@@ -445,6 +481,7 @@ class new_pane(QWidget, Ui_Form):
 			self.comboBox.addItem('')
 			self.comboBox.setItemText(0, '没有读取到文件')
 			self.lineEdit.setText('None')
+			self.pushButton_3.setEnabled(False)
 			self.pushButton.setEnabled(False)
 			QMessageBox.about(self, '警告', '没有读取到文件')
 			return
@@ -456,8 +493,16 @@ class new_pane(QWidget, Ui_Form):
 		os.path.splitext(self.names[0])[0]
 		self.lineEdit.setText('new_'+os.path.splitext(self.names[0])[0])
 		self.pushButton.setEnabled(True)
+		self.pushButton_3.setEnabled(True)
 		QMessageBox.about(self, '提示', '获取成功')
 		# self.change(self.lineEdit.text())
+
+	def check_jieba(self):
+		print('check_jieba')
+
+		text=self.Excel.get_pariciple(int(self.spinBox.text()))
+		# print(text)
+		self.textEdit.setText(text)
 
 
 if __name__ == "__main__":
