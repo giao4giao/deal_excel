@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(['gui_version.py'],
-             pathex=['D:\\python_project\\deal_excel'],
+             pathex=['D:\\project\\deal_excel'],
              binaries=[],
              datas=[],
              hiddenimports=[],
@@ -31,4 +31,4 @@ exe = EXE(pyz,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=False , version='version_info.txt', icon='main.ico')
+          console=False )

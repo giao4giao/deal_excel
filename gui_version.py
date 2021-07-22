@@ -6,9 +6,12 @@ from xlrd import xldate_as_tuple
 from xlrd.biffh import XLRDError
 import datetime
 from xlsxwriter.exceptions import FileCreateError
-import jieba
 import re
 from collections import Counter
+
+import jieba
+jieba.set_dictionary('dict/dict.txt')
+jieba.initialize()
 
 
 class ExcelData(QThread):
@@ -27,17 +30,17 @@ class ExcelData(QThread):
 			self.state = True
 		except XLRDError:
 			self.state=False
-			return 
+			return
 		except FileNotFoundError:
 			self.state=False
-			return 
+			return
 		# 根据工作表的名称获取工作表中的内容（方式①）
 		try:
 			self.table = self.data.sheet_by_name(self.sheetname)
 			self.state = True
 		except XLRDError:
 			self.state=False
-			return 
+			return
 		# 根据工作表的索引获取工作表的内容（方式②）
 		# self.table = self.data.sheet_by_name(0)
 		# 获取第一行所有内容,如果括号中1就是第二行，这点跟列表索引类似
@@ -46,7 +49,7 @@ class ExcelData(QThread):
 			self.state = True
 		except IndexError:
 			self.state=False
-			return 
+			return
 		# 获取工作表的有效行数
 		self.rowNum = self.table.nrows
 		# 获取工作表的有效列数
@@ -319,7 +322,7 @@ class ExcelData(QThread):
 			a, b, c, d = i.get('orgin')
 			# print(a, c, b-1, d-1)
 			# self.write_table.merge_range(a, c, b-1, d-1 , i.get('data'),style7)
-			
+
 			if i.get('data').find('合计金额(大写') != -1 or i.get('data').find('小写金额') != -1:
 				a += ((len(self.names) + 1) * 2)
 				b += ((len(self.names) + 1) * 2)
@@ -444,7 +447,7 @@ class new_pane(QWidget, Ui_Form):
 	def change_(self,string):
 		# print('change_')
 		self.Excel=ExcelData(self.comboBox.currentText(),self.sheetname,self.lineEdit.text()+'.xlsx')
-		
+
 		if not self.Excel.state:
 			self.way=False
 			return
@@ -457,7 +460,7 @@ class new_pane(QWidget, Ui_Form):
 		if dic.get('state'):
 			QMessageBox.about(self, '成功',dic.get('data') )
 		else:
-			QMessageBox.about(self, '失败',dic.get('data') )		
+			QMessageBox.about(self, '失败',dic.get('data') )
 
 	def change(self,string):
 		print(string)
@@ -469,7 +472,7 @@ class new_pane(QWidget, Ui_Form):
 		self.pushButton_3.setEnabled(True)
 		self.lineEdit.setText('new_'+os.path.splitext(string)[0])
 
-		
+
 
 	def check(self):
 		print('check')
