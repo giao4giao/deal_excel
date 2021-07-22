@@ -1,7 +1,7 @@
-from PyQt5.QtCore import Qt,QTimer,QThread,pyqtSignal
+from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt5.QtWidgets import QMessageBox, QWidget, QApplication, QDialog
 from new import Ui_Form
-import os,xlrd,xlsxwriter
+import os, xlrd, xlsxwriter
 from xlrd import xldate_as_tuple
 from xlrd.biffh import XLRDError
 import datetime
@@ -10,6 +10,7 @@ import re
 from collections import Counter
 
 import jieba
+
 jieba.set_dictionary('dict/dict.txt')
 jieba.initialize()
 
@@ -17,7 +18,7 @@ jieba.initialize()
 class ExcelData(QThread):
 	data_signal = pyqtSignal(dict)
 	# 初始化方法
-	def __init__(self, data_path, sheetname,newname):
+	def __init__(self, data_path, sheetname, newname):
 		super(ExcelData, self).__init__()
 		# 定义一个属性接收文件路径
 		self.data_path = data_path
@@ -25,21 +26,26 @@ class ExcelData(QThread):
 		self.sheetname = sheetname
 		self.newname = newname
 		# 使用xlrd模块打开excel表读取数据
+		self.data_signal.connect(self.data_do)
 		try:
 			self.data = xlrd.open_workbook(self.data_path)
 			self.state = True
-		except XLRDError:
-			self.state=False
+		except XLRDError as e:
+			self.state = False
+			self.data_signal.emit({'state': 0, 'data': str(e) + '\n       选择的文件内部格式错误\n         请重新选择'})
 			return
-		except FileNotFoundError:
-			self.state=False
+		except FileNotFoundError as e:
+			self.state = False
+			self.data_signal.emit({'state': 0, 'data': str(e) + '\n      选择的文件内部格式错误\n         请重新选择'})
 			return
 		# 根据工作表的名称获取工作表中的内容（方式①）
 		try:
 			self.table = self.data.sheet_by_name(self.sheetname)
 			self.state = True
-		except XLRDError:
-			self.state=False
+		except XLRDError as e:
+			print(e)
+			self.state = False
+			self.data_signal.emit({'state': 0, 'data': str(e) + '\n       选择的文件内部格式错误\n         请重新选择'})
 			return
 		# 根据工作表的索引获取工作表的内容（方式②）
 		# self.table = self.data.sheet_by_name(0)
@@ -47,8 +53,9 @@ class ExcelData(QThread):
 		try:
 			self.keys = self.table.row_values(6)
 			self.state = True
-		except IndexError:
-			self.state=False
+		except IndexError as e:
+			print(e)
+			self.state = False
 			return
 		# 获取工作表的有效行数
 		self.rowNum = self.table.nrows
@@ -64,19 +71,22 @@ class ExcelData(QThread):
 		self.write_table = self.worksheet.add_worksheet(self.sheetname)
 		print('初始化完成')
 
-	def check(self,names):
+	def data_do(self,string):
+		self.data_=string
+
+	def check(self, names):
 		try:
 			if not self.state:
 				return
-			datas=self.readExcel()
-			_names=[]
+			datas = self.readExcel()
+			_names = []
 			for data in datas:
 				for name in names:
-					if data.get('产品名称').find(name)!=-1:
-						_names+=[name,]
+					if data.get('产品名称').find(name) != -1:
+						_names += [name, ]
 			self.state = True
 			return list(set(_names))
-		except AttributeError :
+		except AttributeError:
 			self.state = False
 
 	# 定义一个读取excel表的方法
@@ -102,9 +112,9 @@ class ExcelData(QThread):
 				elif c_type == 4:
 					c_cell = True if c_cell == 1 else False
 				sheet_data[self.keys[j]] = c_cell
-				# 循环每一个有效的单元格，将字段与值对应存储到字典中
-				# 字典的key就是excel表中每列第一行的字段
-				# sheet_data[self.keys[j]] = self.table.row_values(i)[j]
+			# 循环每一个有效的单元格，将字段与值对应存储到字典中
+			# 字典的key就是excel表中每列第一行的字段
+			# sheet_data[self.keys[j]] = self.table.row_values(i)[j]
 			# 再将字典追加到列表中
 			datas.append(sheet_data)
 		# 返回从excel中获取到的数据：以列表存字典的形式返回
@@ -146,13 +156,13 @@ class ExcelData(QThread):
 		l = []
 		# 这里有个大坑，就是有可能两次数据一样导致被去掉
 		for i in datas:
-			if i not in list :
+			if i not in list:
 				l += [i, ]
 				list += [i, ]
-				n=i
-			elif n==i:
+				n = i
+			elif n == i:
 				# print(i)
-				print('\n在',i[0],'的时候有两条数据是一样的，这不是为难我吗\n')
+				print('\n在', i[0], '的时候有两条数据是一样的，这不是为难我吗\n')
 				list += [i, ]
 
 		black = ('', '', '', '', '', '', '', '', '')
@@ -165,41 +175,42 @@ class ExcelData(QThread):
 		# 		print(i)
 
 		style2 = self.worksheet.add_format({
-		'border': 1,  # 边框
-		'align': 'center',  # 水平居中
-		'valign': 'vcenter',  # 垂直居中
+			'border': 1,  # 边框
+			'align': 'center',  # 水平居中
+			'valign': 'vcenter',  # 垂直居中
 
-		'bold': False,  # 加粗（默认False）
-		'font': u'宋体',  # 字体
-		'fg_color': '#FFFF00',  # 背景色
-		'color': 'red'  # 字体颜色
+			'bold': False,  # 加粗（默认False）
+			'font': u'宋体',  # 字体
+			'fg_color': '#FFFF00',  # 背景色
+			'color': 'red'  # 字体颜色
 		})
 		style = self.worksheet.add_format({
-		'border': 1,  # 边框
-		'align': 'center',  # 水平居中
-		'valign': 'vcenter',  # 垂直居中
+			'border': 1,  # 边框
+			'align': 'center',  # 水平居中
+			'valign': 'vcenter',  # 垂直居中
 
-		'bold': False,  # 加粗（默认False）
-		'font': u'宋体',  # 字体
-		# 'fg_color': '#FFFF00',  # 背景色
-		# 'color': 'green'  # 字体颜色
+			'bold': False,  # 加粗（默认False）
+			'font': u'宋体',  # 字体
+			# 'fg_color': '#FFFF00',  # 背景色
+			# 'color': 'green'  # 字体颜色
 		})
 		style6 = self.worksheet.add_format({
-		'border': 1,  # 边框
-		'align': 'center',  # 水平居中
-		'valign': 'vcenter',  # 垂直居中
+			'border': 1,  # 边框
+			'align': 'center',  # 水平居中
+			'valign': 'vcenter',  # 垂直居中
 
-		'bold': True,  # 加粗（默认False）
-		'font': u'宋体',  # 字体
-		# 'fg_color': '#FFFF00',  # 背景色
-		# 'color': 'green'  # 字体颜色
+			'bold': True,  # 加粗（默认False）
+			'font': u'宋体',  # 字体
+			# 'fg_color': '#FFFF00',  # 背景色
+			# 'color': 'green'  # 字体颜色
 		})
 		n = 7
 		for j in range(self.colNum):
-			num = max([len(tuple((str(i[j]).replace('.',''))))  if type(list[0][j]) == type('') else len(tuple((str(i[j]).replace('.','')))) for i in list])
+			num = max([len(tuple((str(i[j]).replace('.', '')))) if type(list[0][j]) == type('') else len(
+				tuple((str(i[j]).replace('.', '')))) for i in list])
 			num = (num if num > 5 else 5) * 1.5
 			self.write_table.set_row(j, self.width)
-			self.write_table.set_column(j,j,num)
+			self.write_table.set_column(j, j, num)
 		# 写入前信息 7行
 		for i in range(self.colNum):
 			self.write_table.write(6, i, self.keys[i], style6)
@@ -213,21 +224,19 @@ class ExcelData(QThread):
 			n += 1
 		self.worksheet.close()
 
-
-	#获取到合并单元格对象
+	# 获取到合并单元格对象
 	def get_call(self):
 		list = []
 		for (rlow, rhigh, clow, chigh) in self.merged:
 			dict = {}
 			data = self.table.cell_value(rlow, clow)
-			if data.find('小写金额')!=-1:
-				data='小写金额：'+str(round(float(data.split('小写金额：')[-1]),2))
+			if data.find('小写金额') != -1:
+				data = '小写金额：' + str(round(float(data.split('小写金额：')[-1]), 2))
 			dict['data'] = data
 			dict['orgin'] = (rlow, rhigh, clow, chigh)
 			list += [dict, ]
 		# print(list)
 		return list
-
 
 	# 读出主要信息
 	def read(self):
@@ -253,67 +262,66 @@ class ExcelData(QThread):
 					l += [dict, ]
 		return l
 
-
 	# 先行写入一些的内容
 	def write_file(self):
 		style = self.worksheet.add_format({
-		'align': 'center',  # 水平居中
-		'valign': 'vcenter',  # 垂直居中
-		'font': u'宋体',  # 字体
+			'align': 'center',  # 水平居中
+			'valign': 'vcenter',  # 垂直居中
+			'font': u'宋体',  # 字体
 		})
 		style.set_font_size(15)
 		style3 = self.worksheet.add_format({
-		'border': 1,  # 边框
-		'align': 'center',  # 水平居中
-		'valign': 'vcenter',  # 垂直居中
+			'border': 1,  # 边框
+			'align': 'center',  # 水平居中
+			'valign': 'vcenter',  # 垂直居中
 
-		# 'bold': True,  # 加粗（默认False）
-		'font': u'宋体',  # 字体
-		# 'fg_color': '#FFFF00',  # 背景色
-		# 'color': 'green'  # 字体颜色
+			# 'bold': True,  # 加粗（默认False）
+			'font': u'宋体',  # 字体
+			# 'fg_color': '#FFFF00',  # 背景色
+			# 'color': 'green'  # 字体颜色
 		})
 		style3.set_font_size(15)
 		style4 = self.worksheet.add_format({
-		# 'border': 1,  # 边框
-		'align': 'center',  # 水平居中
-		'valign': 'vcenter',  # 垂直居中
+			# 'border': 1,  # 边框
+			'align': 'center',  # 水平居中
+			'valign': 'vcenter',  # 垂直居中
 
-		'bold': True,  # 加粗（默认False）
-		'font': u'宋体',  # 字体
-		# 'fg_color': '#FFFF00',  # 背景色
-		# 'color': 'green'  # 字体颜色
+			'bold': True,  # 加粗（默认False）
+			'font': u'宋体',  # 字体
+			# 'fg_color': '#FFFF00',  # 背景色
+			# 'color': 'green'  # 字体颜色
 		})
 		style4.set_font_size(20)
 		style5 = self.worksheet.add_format({
-		# 'border': 1,  # 边框
-		'align': 'center',  # 水平居中
-		'valign': 'vcenter',  # 垂直居中
+			# 'border': 1,  # 边框
+			'align': 'center',  # 水平居中
+			'valign': 'vcenter',  # 垂直居中
 
-		'bold': True,  # 加粗（默认False）
-		'font': u'宋体',  # 字体
-		# 'fg_color': '#FFFF00',  # 背景色
-		# 'color': 'green'  # 字体颜色
+			'bold': True,  # 加粗（默认False）
+			'font': u'宋体',  # 字体
+			# 'fg_color': '#FFFF00',  # 背景色
+			# 'color': 'green'  # 字体颜色
 		})
 		style5.set_font_size(16)
 		style6 = self.worksheet.add_format({
-		# 'border': 1,  # 边框
-		'align': 'center',  # 水平居中
-		'valign': 'vcenter',  # 垂直居中
+			# 'border': 1,  # 边框
+			'align': 'center',  # 水平居中
+			'valign': 'vcenter',  # 垂直居中
 
-		'bold': True,  # 加粗（默认False）
-		'font': u'宋体',  # 字体
-		# 'fg_color': '#FFFF00',  # 背景色
-		# 'color': 'green'  # 字体颜色
+			'bold': True,  # 加粗（默认False）
+			'font': u'宋体',  # 字体
+			# 'fg_color': '#FFFF00',  # 背景色
+			# 'color': 'green'  # 字体颜色
 		})
 		style7 = self.worksheet.add_format({
-		# 'border': 1,  # 边框
-		'align': 'left',  # 水平居中
-		'valign': 'vcenter',  # 垂直居中
+			# 'border': 1,  # 边框
+			'align': 'left',  # 水平居中
+			'valign': 'vcenter',  # 垂直居中
 
-		'bold': True,  # 加粗（默认False）
-		'font': u'宋体',  # 字体
-		# 'fg_color': '#FFFF00',  # 背景色
-		# 'color': 'green'  # 字体颜色
+			'bold': True,  # 加粗（默认False）
+			'font': u'宋体',  # 字体
+			# 'fg_color': '#FFFF00',  # 背景色
+			# 'color': 'green'  # 字体颜色
 		})
 		style7.set_font_size(14)
 
@@ -327,19 +335,19 @@ class ExcelData(QThread):
 				a += ((len(self.names) + 1) * 2)
 				b += ((len(self.names) + 1) * 2)
 				# print(a, c, b-1, d-1)
-				self.write_table.merge_range(a, c, b-1, d-1 , i.get('data'),style3)
+				self.write_table.merge_range(a, c, b - 1, d - 1, i.get('data'), style3)
 			else:
-				if a==0:
-					style_=style4
-				elif a==3:
+				if a == 0:
+					style_ = style4
+				elif a == 3:
 					style_ = style5
-				elif a==1 or a==2:
+				elif a == 1 or a == 2:
 					style_ = style6
-				elif a==5:
+				elif a == 5:
 					style_ = style7
 				else:
-					style_= style
-				self.write_table.merge_range(a, c, b-1, d-1 , i.get('data'),style_)
+					style_ = style
+				self.write_table.merge_range(a, c, b - 1, d - 1, i.get('data'), style_)
 			self.write_table.set_row(a, self.width)
 
 		for i in self.read():
@@ -359,41 +367,37 @@ class ExcelData(QThread):
 		try:
 			try:
 				self.solve_data()
-				self.data_signal.emit({'state':1,'data':'转换完成'})
+				self.data_signal.emit({'state': 1, 'data': '转换完成'})
 			except FileCreateError:
-				self.data_signal.emit({'state':0,'data':'未关闭xlsx文件，关闭后再试'})
+				self.data_signal.emit({'state': 0, 'data': '未关闭xlsx文件，关闭后再试'})
 		except BaseException as e:
-			self.data_signal.emit({'state':0,'data':str(e)+'\n           选择的文件内部格式错误\n         请重新选择'})
+			self.data_signal.emit({'state': 0, 'data': str(e) + '\n           选择的文件内部格式错误\n         请重新选择'})
 
 	# 获取到词语
-	def get_pariciple(self,max_num=4):
+	def get_pariciple(self, max_num=4):
 		chinese = '[\u4e00-\u9fa5]+'
-		datas=self.readExcel()
-		l=[]
+		datas = self.readExcel()
+		l = []
 		for data in datas:
-			l+=[data.get('产品名称'),]
-		ls=[]
-		l =[' '.join(re.findall(chinese,i)) for i in l]
+			l += [data.get('产品名称'), ]
+		ls = []
+		l = [' '.join(re.findall(chinese, i)) for i in l]
 		for i in l:
 			# ls+=[jieba.lcut(i,cut_all=True),]
-			ls+=[jieba.lcut(i),]
+			ls += [jieba.lcut(i), ]
 		# print(ls)
-		l=[]
+		l = []
 		for s in ls:
 			for i in s:
-				if i not in (' ','挂版','沙发') and len(i)>=2:
-					l+=[i,]
+				if i not in (' ', '挂版', '沙发') and len(i) >= 2:
+					l += [i, ]
 		# l=list(set(l))
 		# print(Counter(l))
-		dic=Counter(l)
-		dic = sorted(dic.items(),key= lambda x:x[1],reverse=True)[:max_num]
-		key=[x[0] for x in dic]
+		dic = Counter(l)
+		dic = sorted(dic.items(), key=lambda x: x[1], reverse=True)[:max_num]
+		key = [x[0] for x in dic]
 		# print(key)
 		return '\n'.join(key)
-
-
-
-
 
 
 class new_pane(QWidget, Ui_Form):
@@ -402,21 +406,18 @@ class new_pane(QWidget, Ui_Form):
 		self.setAttribute(Qt.WA_StyledBackground, True)
 		self.setupUi(self)
 
-
-		self.timer=QTimer()
-		self.timer.timeout.connect(lambda : self.check())
-		self.timer.timeout.connect(lambda : self.timer.stop())
+		self.timer = QTimer()
+		self.timer.timeout.connect(lambda: self.check())
+		self.timer.timeout.connect(lambda: self.timer.stop())
 		self.timer.start(500)
 
 		self.sheetname = "对账单"
 		self.way = True
 
-
-
 	def start(self):
 		print('start')
-		if self.lineEdit.text()=='':
-			self.lineEdit.setText('new_'+os.path.splitext(self.comboBox.currentText())[0])
+		if self.lineEdit.text() == '':
+			self.lineEdit.setText('new_' + os.path.splitext(self.comboBox.currentText())[0])
 
 		if not self.way:
 			# self.change_('')
@@ -436,48 +437,51 @@ class new_pane(QWidget, Ui_Form):
 			QMessageBox.about(self, '失败', '导入的文件有问题，无法识别')
 			return
 		if len(names) != len(datas):
-			l=[data for data in datas if data not in names]
+			l = [data for data in datas if data not in names]
 			if l != []:
-				string='\n'.join(l)
-			QMessageBox.about(self, '提示', '发现文件中不存在的关键词:\n'+string)
+				string = '\n'.join(l)
+			QMessageBox.about(self, '提示', '发现文件中不存在的关键词:\n' + string)
 		# print(names)
-		self.Excel.names =names
+		self.Excel.names = names
 		self.Excel.start()
 
-	def change_(self,string):
-		# print('change_')
-		self.Excel=ExcelData(self.comboBox.currentText(),self.sheetname,self.lineEdit.text()+'.xlsx')
-
+	def change_(self, string):
+		print('change_')
+		self.Excel = ExcelData(self.comboBox.currentText(), self.sheetname, self.lineEdit.text() + '.xlsx')
+		self.Excel.data_signal.connect(self.deal)
 		if not self.Excel.state:
-			self.way=False
+			self.way = False
+			QMessageBox.about(self, '提示',(self.Excel.data_.get('data')))
+			self.pushButton_3.setEnabled(False)
+			self.pushButton.setEnabled(False)
 			return
 		else:
-			self.way=True
-		self.Excel.data_signal.connect(self.deal)
+			self.way = True
+			self.pushButton_3.setEnabled(True)
+			self.pushButton.setEnabled(True)
+		QMessageBox.about(self, '提示', '        初始化成功\n（可直接点击获取关键字）')
 
-	def deal(self,dic):
+	def deal(self, dic):
 		self.change_('')
 		if dic.get('state'):
-			QMessageBox.about(self, '成功',dic.get('data') )
+			QMessageBox.about(self, '成功', dic.get('data'))
 		else:
-			QMessageBox.about(self, '失败',dic.get('data') )
+			QMessageBox.about(self, '失败', dic.get('data'))
 
-	def change(self,string):
+	def change(self, string):
 		print(string)
-		if string=='没有读取到文件':
+		if string == '没有读取到文件':
 			self.pushButton.setEnabled(False)
 			self.pushButton_3.setEnabled(False)
 			return
 		self.pushButton.setEnabled(True)
 		self.pushButton_3.setEnabled(True)
-		self.lineEdit.setText('new_'+os.path.splitext(string)[0])
-
-
+		self.lineEdit.setText('new_' + os.path.splitext(string)[0])
 
 	def check(self):
 		print('check')
 		self.comboBox.clear()
-		self.names=[i for i in os.listdir() if os.path.splitext(i)[-1] in ('.xlsx','.xls')]
+		self.names = [i for i in os.listdir() if os.path.splitext(i)[-1] in ('.xlsx', '.xls')]
 
 		if self.names == []:
 			self.names = None
@@ -488,28 +492,30 @@ class new_pane(QWidget, Ui_Form):
 			self.pushButton.setEnabled(False)
 			QMessageBox.about(self, '警告', '没有读取到文件')
 			return
-		n=0
+		n = 0
 		for name in self.names:
 			self.comboBox.addItem('')
 			self.comboBox.setItemText(n, name)
-			n+=1
+			n += 1
 		os.path.splitext(self.names[0])[0]
-		self.lineEdit.setText('new_'+os.path.splitext(self.names[0])[0])
+		self.lineEdit.setText('new_' + os.path.splitext(self.names[0])[0])
 		self.pushButton.setEnabled(True)
 		self.pushButton_3.setEnabled(True)
-		QMessageBox.about(self, '提示', '获取成功')
-		# self.change(self.lineEdit.text())
+		# QMessageBox.about(self, '提示', '获取成功')
+
+	# self.change(self.lineEdit.text())
 
 	def check_jieba(self):
 		print('check_jieba')
 
-		text=self.Excel.get_pariciple(int(self.spinBox.text()))
+		text = self.Excel.get_pariciple(int(self.spinBox.text()))
 		# print(text)
 		self.textEdit.setText(text)
 
 
 if __name__ == "__main__":
 	import sys
+
 	try:
 		app = QApplication(sys.argv)
 		window = new_pane()
